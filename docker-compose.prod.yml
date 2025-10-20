@@ -1,0 +1,14 @@
+services:
+  health-facilities-tracker-db:
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD_PROD:-root_password}
+      MYSQL_USER: ${DB_USER_PROD:-user}
+      MYSQL_PASSWORD: ${DB_PASSWORD_PROD:-user_password}
+      MYSQL_DATABASE: ${DB_NAME_PROD:-health-facilities-tracker_db}
+    ports:
+      - ${DB_PORT_PROD:-3306}:3306
+    volumes:
+      - health-facilities-tracker-db-prod-data:/var/lib/mysql
+
+volumes:
+  health-facilities-tracker-db-prod-data:

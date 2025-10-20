@@ -1,0 +1,29 @@
+services:
+  health-facilities-tracker-api:
+    container_name: health-facilities-tracker-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - health-facilities-tracker-db
+    env_file:
+      - .env
+    ports:
+      - ${API_PORT:-8000}:8000
+    networks:
+      - health-facilities-tracker-network
+
+  health-facilities-tracker-db:
+    container_name: health-facilities-tracker-db
+    image: mysql:8.0
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    env_file:
+      - .env
+    networks:
+      - health-facilities-tracker-network
+
+networks:
+  health-facilities-tracker-network:
+    driver: bridge
+
