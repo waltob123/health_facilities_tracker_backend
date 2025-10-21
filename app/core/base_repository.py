@@ -112,7 +112,7 @@ class BaseReadRepository(BaseRepository[T]):
 
         return query.all()
 
-    def get_by_field(self, *, field_name: str, value: Any, operator: str = "eq") -> Union[T, list[T]]:
+    def get_by_field(self, *, field_name: str, value: Any, operator: str = "eq") -> Union[T, list[T], None]:
         """Get entities by a specific field.
 
         Args:
@@ -142,7 +142,11 @@ class BaseReadRepository(BaseRepository[T]):
 
         # Default equality for non-string fields
         # result = self.db_session.query(self.model).filter(field == value).all()  # type: ignore
-        return result if len(result) > 1 else result[0]
+        if len(result) == 1:
+            return result[0]
+        if len(result) > 1:
+            return result
+        return None
 
     def exist_but_deleted(self, *, field_name: str, value: Any, operator: str = "eq") -> bool:  # type: ignore
         """Check if an entity is deleted or not.

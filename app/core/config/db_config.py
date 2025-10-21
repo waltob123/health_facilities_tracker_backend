@@ -8,6 +8,7 @@ class DBConfig(BaseSettings):
 
     DB_HOST: str = "127.0.0.1"
     DB_DOCKER_HOST: str = "health-facilities-tracker-db"
+    DB_DOCKER_PORT: int
     DB_DRIVER: str = "mysql+pymysql"
 
     # production

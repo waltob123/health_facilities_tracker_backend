@@ -25,17 +25,29 @@ if project_config.PROJECT_ENV == ProjectEnvironmentConstants.DEV.value:
     db_name = db_config.DB_NAME_DEV
     db_user = db_config.DB_USER_DEV
     db_password = parse.quote_plus(db_config.DB_PASSWORD_DEV)
-    db_port = db_config.DB_PORT_DEV
+    db_port = (
+        db_config.DB_PORT_DEV
+        if project_config.PROJECT_PLATFORM == ProjectPlatformConstants.LOCAL.value
+        else db_config.DB_DOCKER_PORT
+    )
 elif project_config.PROJECT_ENV == ProjectEnvironmentConstants.TEST.value:
     db_name = db_config.DB_NAME_TEST
     db_user = db_config.DB_USER_TEST
-    db_port = db_config.DB_PORT_TEST
+    db_port = (
+        db_config.DB_PORT_TEST
+        if project_config.PROJECT_PLATFORM == ProjectPlatformConstants.LOCAL.value
+        else db_config.DB_DOCKER_PORT
+    )
     db_password = parse.quote_plus(db_config.DB_PASSWORD_TEST)
 elif project_config.PROJECT_ENV == ProjectEnvironmentConstants.PROD.value:
     db_name = db_config.DB_NAME_PROD
     db_user = db_config.DB_USER_PROD
     db_password = parse.quote_plus(db_config.DB_PASSWORD_PROD)
-    db_port = db_config.DB_PORT_PROD
+    db_port = (
+        db_config.DB_PORT_PROD
+        if project_config.PROJECT_PLATFORM == ProjectPlatformConstants.LOCAL.value
+        else db_config.DB_DOCKER_PORT
+    )
 
 
 SQLALCHEMY_DATABASE_URL = f"{db_driver}://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
