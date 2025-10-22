@@ -28,7 +28,7 @@ class SubDistrictRepository(BaseReadRepository[SubDistrict], BaseWriteRepository
             data (CreateSubDistrictSchema): The sub_district data needed to create the entity.
 
         Returns:
-            T: The newly created sub_district.
+            District: The newly created sub_district.
         """
         return self._default_create(data=data.model_dump())
 
@@ -51,7 +51,7 @@ class SubDistrictRepository(BaseReadRepository[SubDistrict], BaseWriteRepository
             sort (dict[str, str]): Sort parameters.
 
         Returns:
-            list[T]: A list of all entity instances.
+            list[SubDistrict]: A list of all entity instances.
         """
         query = self.db_session.query(SubDistrict)
         query = query.options(joinedload(SubDistrict.district).joinedload(District.region))

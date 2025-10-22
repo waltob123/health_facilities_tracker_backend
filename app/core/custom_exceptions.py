@@ -36,3 +36,11 @@ class InvalidPaginationValueError(Exception):
 
 class EntityDoesNotExistsError(Exception):
     """Exception for when an entity does not exist."""
+
+
+class InvalidPasswordError(Exception):
+    """Exception for when a password is invalid."""
+
+
+class InvalidEmailError(Exception):
+    """Exception for when an email is invalid."""

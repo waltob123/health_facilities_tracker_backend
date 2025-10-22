@@ -28,6 +28,11 @@ class User(Base, IdentityMixin, AuditCreateMixin, AuditUpdateMixin, SoftDeleteMi
         return {
             "id": self.id,
             "email": self.email,
+            "first_name": self.profile.first_name,
+            "last_name": self.profile.last_name,
+            "phone_number": self.profile.phone_number,
+            "country": self.profile.country,
+            # "facility_name": self.profile.facility.name if self.profile.facility.name else None,
             "first_time_login": self.first_time_login,
             "token_version": self.token_version,
             "is_logout": self.is_logout,

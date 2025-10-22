@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 
 from app.core.mixins.base import AuditCreateMixin, AuditUpdateMixin, IdentityMixin, SoftDeleteMixin
 from app.database.base import Base
+from app.locations.models import Facility  # noqa
 
 
 class UserProfile(Base, IdentityMixin, AuditCreateMixin, AuditUpdateMixin, SoftDeleteMixin):
@@ -13,16 +14,14 @@ class UserProfile(Base, IdentityMixin, AuditCreateMixin, AuditUpdateMixin, SoftD
     user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     first_name = Column(String(50), nullable=False)
     last_name = Column(String(50), nullable=False)
-    other_names = Column(String(50), nullable=True)
     phone_number = Column(String(15), nullable=False, unique=True)
-    cadre_id = Column(String(36), ForeignKey("cadres.id", ondelete="SET NULL", onupdate="CASCADE"), nullable=True)
+    country = Column(String(50), nullable=False)
     facility_id = Column(
         String(36), ForeignKey("facilities.id", ondelete="SET NULL", onupdate="CASCADE"), nullable=True
     )
 
     # Relationships
     user = relationship("User", back_populates="profile")
-    cadre = relationship("Cadre", back_populates="user_profiles")
     facility = relationship("Facility", back_populates="user_profiles")
 
     def to_dict(self) -> dict:
@@ -35,12 +34,9 @@ class UserProfile(Base, IdentityMixin, AuditCreateMixin, AuditUpdateMixin, SoftD
             "is_suspended": self.user.is_suspended,
             "first_name": self.first_name,
             "last_name": self.last_name,
-            "other_names": self.other_names,
             "phone_number": self.phone_number,
-            "cadre_id": self.cadre_id,
-            "cadre_name": self.cadre.name if self.cadre else None,
             "facility_id": self.facility_id,
-            "facility_name": self.facility.name if self.facility else None,
+            "facility_name": self.facility.name if self.facility.name else None,
             "is_deleted": self.is_deleted,
             "deleted_at": self.deleted_at if self.deleted_at else None,
             "created_at": self.created_at,

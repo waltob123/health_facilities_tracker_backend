@@ -28,7 +28,7 @@ class DistrictRepository(BaseReadRepository[District], BaseWriteRepository[Distr
             data (CreateDistrictSchema): The district data needed to create the entity.
 
         Returns:
-            T: The newly created district.
+            District: The newly created district.
         """
         return self._default_create(data=data.model_dump())
 
@@ -51,7 +51,7 @@ class DistrictRepository(BaseReadRepository[District], BaseWriteRepository[Distr
             sort (dict[str, str]): Sort parameters.
 
         Returns:
-            list[T]: A list of all entity instances.
+            list[District]: A list of all entity instances.
         """
         query = self.db_session.query(District)
         query = query.options(joinedload(District.region))

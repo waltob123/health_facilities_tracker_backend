@@ -28,7 +28,7 @@ class RegionRepository(BaseReadRepository[Region], BaseWriteRepository[Region]):
             data (CreateRegionSchema): The region data needed to create the entity.
 
         Returns:
-            T: The newly created region.
+            Region: The newly created region.
         """
         return self._default_create(data=data.model_dump())
 

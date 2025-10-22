@@ -7,6 +7,14 @@ T = TypeVar("T")
 class ErrorMessages(Enum):
     """Constants for error messages."""
 
+    INVALID_PHONE_NUMBER = (
+        "The phone number is not valid. Phone numbers format: (country_code)number.\nE.g (233)111111111"
+    )
+    INVALID_EMAIL = "The email provided is not a valid email."
+    INVALID_PASSWORD = (
+        "The password provided is not a valid password. Passwords must be 8 or more characters, "
+        "contain at least 1 uppercase, lowercase and number"
+    )
     INVALID_ID = "The id provided is not of the right format."
     INVALID_PAGINATION_VALUES = "Pagination values must be positive integers."
 
