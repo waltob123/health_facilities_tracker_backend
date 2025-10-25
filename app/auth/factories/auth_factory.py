@@ -6,6 +6,7 @@ from app.auth.utils.hash_password import PasswordHashManager
 from app.core.mail_service import MailServiceBuilder
 from app.locations.dependencies.facility_service_dependency import create_facility_service
 from app.users.dependencies.user_profile_service_dependency import create_user_profile_service
+from app.users.dependencies.user_service_dependency import create_user_service
 from app.users.repositories.user_repository import UserRepository
 
 
@@ -25,11 +26,13 @@ class AuthServiceFactory:
         facility_service = create_facility_service(db_session=user_repository.db_session)
         role_service = create_role_service(db_session=user_repository.db_session)
         user_profile_service = create_user_profile_service(db_session=user_repository.db_session)
+        user_service = create_user_service(db_session=user_repository.db_session)
         password_hash_manager = PasswordHashManager()
         mail_service = MailServiceBuilder()
         token_service = TokenService(secret=auth_config.JWT_SECRET_KEY, algorithm=auth_config.JWT_ALGORITHM)
         return AuthService(
             user_repository=user_repository,
+            user_service=user_service,
             user_profile_service=user_profile_service,
             facility_service=facility_service,
             role_service=role_service,

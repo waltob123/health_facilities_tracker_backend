@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 
 from app.core.base_service import BaseService
 from app.core.custom_exceptions import ObjectAlreadyExistsException
-from app.locations.models import District
+from app.locations.models import District, Region
 from app.locations.repositories.district_repository import DistrictRepository
 from app.locations.schemas.request.district import CreateDistrictSchema, UpdateDistrictSchema
 from app.locations.utils.allowed_filters_sort import (
@@ -18,12 +18,12 @@ from app.locations.utils.allowed_filters_sort import (
 class DistrictService(BaseService[District]):
     """The service class for 'district'."""
 
-    def __init__(self, *, district_repository: DistrictRepository, region_service: BaseService) -> None:
+    def __init__(self, *, district_repository: DistrictRepository, region_service: BaseService[Region]) -> None:
         """Initializer for 'district' service.
 
         Args:
             district_repository (DistrictRepository): The district repository.
-            region_service (BaseService): The region service.
+            region_service (BaseService[Region]): The region service.
         """
         self.district_repository = district_repository
         self.region_service = region_service

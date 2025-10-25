@@ -2,6 +2,7 @@ from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from app.auth.custom_exceptions import AuthHTTPException
 from app.core.schemas.base_entity_response_schema import ResponseSchema
 from app.core.utils.constants import HTTPResponseStatus
 
@@ -82,4 +83,29 @@ async def value_error_exception_handler(request: Request, exception: ValueError)
         status=HTTPResponseStatus.ERROR.value,
         status_code=status.HTTP_400_BAD_REQUEST,
         message=str(exception),  # type: ignore
+    ).to_json_response()
+
+
+async def authentication_http_exception_handler(request: Request, exception: AuthHTTPException) -> JSONResponse:
+    """Custom exception handler for ValueError.
+
+    Args:
+        request (Request): The request object.
+        exception (AuthHTTPException): The AuthHTTPException object.
+
+    Returns:
+        JSONResponse: The JSON response with the error message.
+    """
+    status_code = exception.status_code
+    message = exception.message
+    data = exception.data
+
+    print(status_code, message, data)
+
+    return ResponseSchema(
+        request=request,
+        status=HTTPResponseStatus.ERROR.value,
+        status_code=status_code,  # type: ignore
+        message=message,  # type: ignore
+        data=data,
     ).to_json_response()

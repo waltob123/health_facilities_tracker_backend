@@ -27,6 +27,24 @@ class BaseService(ABC, Generic[T]):
         """
         self.main_repository = main_repository
 
+    def check_if_exists_and_not_deleted(self, *, field_name: str, value: Any, operator: str = "eq") -> bool:
+        """Check if an entity exists.
+
+        Args:
+            field_name (str): The name of the field.
+            value (Any): The value to filter by.
+            operator (str): The operator to filter by.
+
+        Returns:
+            bool: True if exists, False otherwise
+        """
+        try:
+            entity = self.main_repository.exist_but_deleted(field_name=field_name, value=value, operator=operator)  # type: ignore
+        except EntityDoesNotExistsError as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+
+        return True if not entity else False
+
     def get_by_id(self, *, entity_id: str) -> T:
         """Get an entity by its ID.
 
@@ -40,12 +58,7 @@ class BaseService(ABC, Generic[T]):
             HTTPException: If the entity does not exist.
         """
         # check if the role exist
-        try:
-            entity = self.main_repository.exist_but_deleted(field_name="id", value=entity_id, operator="eq")  # type: ignore
-        except EntityDoesNotExistsError as e:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-
-        if entity:
+        if not self.check_if_exists_and_not_deleted(field_name="id", value=entity_id, operator="eq"):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=ErrorMessages.entity_does_not_exists(entity_type=self.main_repository.model, value=entity_id),
@@ -64,7 +77,10 @@ class BaseService(ABC, Generic[T]):
         Returns:
             list[T]: A list of entity instances matching the criteria.
         """
-        return self.main_repository.get_by_field(field_name=field_name, value=value, operator=operator)  # type: ignore
+        try:
+            return self.main_repository.get_by_field(field_name=field_name, value=value, operator=operator)  # type: ignore
+        except EntityDoesNotExistsError as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
     def delete(self, *, entity_id: str) -> T:
         """Delete an entity.
@@ -92,15 +108,12 @@ class BaseService(ABC, Generic[T]):
         Raises:
             HTTPException: If the entity does not exist.
         """
-        try:
-            entity = self.main_repository.exist_but_deleted(field_name="id", value=entity_id, operator="eq")  # type: ignore
-        except EntityDoesNotExistsError as e:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
-
-        if not entity:
+        if self.check_if_exists_and_not_deleted(field_name="id", value=entity_id, operator="eq"):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=ErrorMessages.entity_does_not_exists(entity_type=self.main_repository.model, value=entity_id),
+                detail=ErrorMessages.cannot_restore_existing_entity(
+                    entity_type=self.main_repository.model, value=entity_id
+                ),
             )
 
         entity_to_restore = self.main_repository.get_by_id(entity_id=entity_id)  # type: ignore

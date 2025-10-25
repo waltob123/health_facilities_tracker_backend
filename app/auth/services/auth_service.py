@@ -1,18 +1,28 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import Request
+from fastapi import HTTPException, Request, status
 from fastapi_mail.errors import ConnectionErrors
 
 from app.auth.config.auth_config import auth_config
+from app.auth.custom_exceptions import AuthHTTPException
+from app.auth.models import Role
 from app.auth.schemas.mail_body import AccountVerificationTemplateBodySchema
+from app.auth.schemas.request.auth import (
+    AccountVerificationResponseSchema,
+    AccountVerificationTokenSchema,
+    AlreadyVerifiedErrorDataSchema,
+)
 from app.auth.services.token_service import TokenService
 from app.auth.utils.hash_password import PasswordHashManager
 from app.core.base_service import BaseService
 from app.core.config.project_config import project_config
+from app.core.custom_exceptions import ExpiredTokenError, FailedToSaveObjectException, InvalidTokenError
 from app.core.mail_service import MailServiceBuilder
 from app.core.utils.constants import ApplicationConstants
-from app.users.models import User
+from app.core.utils.messages import ErrorMessages, SuccessMessages
+from app.locations.models import Facility
+from app.users.models import User, UserProfile
 from app.users.repositories.user_repository import UserRepository
 from app.users.schemas.request.user import CreateUserRequestSchema, CreateUserSchema
 from app.users.schemas.request.user_profile import CreateUserProfileSchema
@@ -25,9 +35,10 @@ class AuthService(BaseService[User]):
         self,
         *,
         user_repository: UserRepository,
-        user_profile_service: BaseService,
-        facility_service: BaseService,
-        role_service: BaseService,
+        user_service: BaseService[User],
+        user_profile_service: BaseService[UserProfile],
+        facility_service: BaseService[Facility],
+        role_service: BaseService[Role],
         password_hash_manager: PasswordHashManager,
         mail_service: MailServiceBuilder,
         token_service: TokenService,
@@ -36,14 +47,16 @@ class AuthService(BaseService[User]):
 
         Args:
             user_repository (UserRepository): The user repository.
-            user_profile_service (BaseService): The user profile service.
-            facility_service (BaseService): The facility service.
-            role_service (BaseService): The role service.
+            user_service (BaseService[User]): The user service.
+            user_profile_service (BaseService[UserProfile]): The user profile service.
+            facility_service (BaseService[Facility]): The facility service.
+            role_service (BaseService[Role]): The role service.
             password_hash_manager (PasswordHashManager): The manager for hashing and verifying passwords.
             mail_service (MailServiceBuilder): The mailing service.
             token_service (TokenService): The token service.
         """
         self.user_repository = user_repository
+        self.user_service = user_service
         self.user_profile_service = user_profile_service
         self.facility_service = facility_service
         self.role_service = role_service
@@ -97,7 +110,7 @@ class AuthService(BaseService[User]):
         # send the email
         body = AccountVerificationTemplateBodySchema(
             app_name=ApplicationConstants.APP_NAME.value,
-            first_name=user_profile.first_name,
+            first_name=str(user_profile.first_name),
             title="User Account Verification",
             code_expires_in_hours=24,
             current_year=datetime.now(tz=timezone.utc).year,
@@ -117,6 +130,66 @@ class AuthService(BaseService[User]):
             await self.mail_service.send_mail()
 
         return user
+
+    def verify_account(self, *, token_data: AccountVerificationTokenSchema) -> AccountVerificationResponseSchema:
+        """Verify a user's account by verifying their token.
+
+        Args:
+            token_data (AccountVerificationTokenSchema): The token data to verify.
+
+        Returns:
+            AccountVerificationResponseSchema: The response after verification is successful.
+        """
+        # decode the token
+        # raise error if token is invalid or expired
+        try:
+            decoded_token = self.token_service.decode_token(token=token_data.token)
+        except InvalidTokenError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e),
+            ) from e
+        except ExpiredTokenError as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+
+        # check if the user exists
+        if not self.user_service.check_if_exists_and_not_deleted(
+            field_name="id", value=decoded_token["sub"], operator="eq"
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=ErrorMessages.entity_does_not_exists(entity_type=User, value=decoded_token["sub"]),
+            )
+
+        # get the user to verify
+        user_to_verify = self.user_service.get_by_id(entity_id=decoded_token["sub"])
+
+        # raise an error if the is user is already verified
+        if user_to_verify.is_verified:
+            raise AuthHTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                data=AlreadyVerifiedErrorDataSchema(
+                    email=user_to_verify.email,  # type: ignore
+                    is_verified=bool(user_to_verify.is_verified),
+                ).model_dump(),
+                message=ErrorMessages.ALREADY_VERIFIED.value,
+            )
+
+        # set is verified to true on user
+        user_to_verify.is_verified = True  # type: ignore
+
+        try:
+            verified_user = self.user_repository.save(object_to_save=user_to_verify)
+        except FailedToSaveObjectException as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+
+        response = AccountVerificationResponseSchema(
+            email=verified_user.email,  # type: ignore
+            message=SuccessMessages.VERIFIED.value,
+            is_verified=bool(verified_user.is_verified),
+        )
+
+        return response
 
     # def change_user_role(self, *, user_id: str, role_data: UpdateUserRoleSchema) -> User:
     #     """Change a user's role."""

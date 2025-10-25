@@ -48,3 +48,11 @@ class InvalidEmailError(Exception):
 
 class InvalidPhoneNumberError(Exception):
     """Exception for when a phone number is invalid."""
+
+
+class ExpiredTokenError(Exception):
+    """Exception for when a token is expired."""
+
+
+class InvalidTokenError(Exception):
+    """Exception for when a token is invalid."""

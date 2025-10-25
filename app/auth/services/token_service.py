@@ -3,6 +3,7 @@ from typing import Any, Optional
 
 import jwt
 
+from app.core.custom_exceptions import ExpiredTokenError, InvalidTokenError
 from app.core.utils.messages import ErrorMessages
 
 
@@ -24,7 +25,7 @@ class TokenService:
         self.__secret = secret
         self.__algorithm = algorithm
 
-    def create_token(self, payload: dict, expires_in_minutes: int = 15, token_type: Optional[str] = None) -> str:
+    def create_token(self, *, payload: dict, expires_in_minutes: int = 15, token_type: Optional[str] = None) -> str:
         """Encode the payload and generate a JWT token
 
         Args:
@@ -48,7 +49,7 @@ class TokenService:
 
         return token
 
-    def decode_token(self, token: str) -> Any:
+    def decode_token(self, *, token: str) -> Any:
         """Decode the JWT token and get the payload
 
         Args:
@@ -60,8 +61,8 @@ class TokenService:
         try:
             payload = jwt.decode(token, self.__secret, algorithms=[self.__algorithm])
         except jwt.ExpiredSignatureError as e:
-            raise ValueError(ErrorMessages.EXPIRED_TOKEN.value) from e
+            raise ExpiredTokenError(ErrorMessages.EXPIRED_TOKEN.value) from e
         except jwt.InvalidTokenError as e:
-            raise ValueError(ErrorMessages.INVALID_TOKEN.value) from e
+            raise InvalidTokenError(ErrorMessages.INVALID_TOKEN.value) from e
 
         return payload

@@ -12,7 +12,7 @@ The following permissions have the authority to register a user:
 - None
 
 ### Request Body:
-- {\n
+{\n
     email: string,\n
     password: string,\n
     role_ids: [string],\n
@@ -23,6 +23,28 @@ The following permissions have the authority to register a user:
         country: string,\n
         facility_id: Optional[string]\n
     }\n
+}
+
+### Response Body
+- General response schema
+"""
+
+verify_account_docs = """
+### This endpoint is used for verifying an account.
+
+The following permissions have the authority to verify an account:
+
+- `all`
+
+### Path Parameters:
+- None
+
+### Query Parameters:
+- None
+
+### Request Body:
+{\n
+    token: string\n
 }
 
 ### Response Body

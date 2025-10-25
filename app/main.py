@@ -5,11 +5,13 @@ from fastapi.exceptions import RequestValidationError
 from fastapi_mail import ConnectionConfig, FastMail
 from pydantic import SecretStr
 
+from app.auth.custom_exceptions import AuthHTTPException
 from app.auth.routes.api.v1.auth_routes import auth_router
 from app.auth.routes.api.v1.permission_routes import permission_router
 from app.auth.routes.api.v1.role_routes import role_router
 from app.core.config.mail_config import mail_config
 from app.core.handlers.exceptions import (
+    authentication_http_exception_handler,
     http_exception_handler,
     validation_exception_handler,
     value_error_exception_handler,
@@ -70,7 +72,7 @@ fast_mail = FastMail(config=config)
 app_v1.add_exception_handler(HTTPException, http_exception_handler)  # type: ignore
 app_v1.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore
 app_v1.add_exception_handler(ValueError, value_error_exception_handler)  # type: ignore
-
+app_v1.add_exception_handler(AuthHTTPException, authentication_http_exception_handler)  # type: ignore
 ##################################################################################
 #                                                                                #
 #                            ADD YOUR ROUTERS HERE                               #

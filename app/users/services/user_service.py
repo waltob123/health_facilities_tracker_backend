@@ -4,7 +4,8 @@ from fastapi import HTTPException, status
 
 from app.core.base_service import BaseService
 from app.core.custom_exceptions import ObjectAlreadyExistsException
-from app.users.models import User
+from app.locations.models import Facility
+from app.users.models import User, UserProfile
 from app.users.repositories.user_repository import UserRepository
 from app.users.schemas.request.user_profile import UpdateUserProfileRequestSchema
 from app.users.utils.allowed_filters_sort import (
@@ -19,7 +20,11 @@ class UserService(BaseService[User]):
     """The service class for 'user'."""
 
     def __init__(
-        self, *, user_repository: UserRepository, user_profile_service: BaseService, facility_service: BaseService
+        self,
+        *,
+        user_repository: UserRepository,
+        user_profile_service: BaseService[UserProfile],
+        facility_service: BaseService[Facility],
     ) -> None:
         """Initializer for 'user' service.
 

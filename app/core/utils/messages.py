@@ -7,6 +7,7 @@ T = TypeVar("T")
 class ErrorMessages(Enum):
     """Constants for error messages."""
 
+    ALREADY_VERIFIED = "This account has already been verified."
     EXPIRED_TOKEN = "The token provided is expired."
     INVALID_TOKEN = "The token provided is not valid."
     INVALID_PHONE_NUMBER = (
@@ -44,6 +45,19 @@ class ErrorMessages(Enum):
              str: The message
         """
         return f"{entity_type.__name__} '{value}' does not exist."
+
+    @classmethod
+    def cannot_restore_existing_entity(cls, *, entity_type: Type[T], value: str) -> str:
+        """Function to create cannot restore existing entity error messages.
+
+        Args:
+              entity_type (str): The entity type.
+              value (str): The value that do not exist.
+
+        Returns:
+             str: The message
+        """
+        return f"Cannot restore existing {entity_type.__name__} '{value}'."
 
     @classmethod
     def invalid_filter_or_sort(cls, *, filter_or_sort_field: str) -> str:
@@ -109,6 +123,8 @@ class ErrorMessages(Enum):
 
 class SuccessMessages(Enum):
     """Constants for success messages."""
+
+    VERIFIED = "The account has been verified successfully."
 
     @classmethod
     def created_successfully(cls, *, object_type: Type[T], extra_info: Optional[str] = None) -> str:

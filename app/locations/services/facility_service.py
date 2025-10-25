@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 
 from app.core.base_service import BaseService
 from app.core.custom_exceptions import ObjectAlreadyExistsException
-from app.locations.models import Facility
+from app.locations.models import Facility, SubDistrict
 from app.locations.repositories.facility_repository import FacilityRepository
 from app.locations.schemas.request.facility import CreateFacilitySchema, UpdateFacilitySchema
 from app.locations.utils.allowed_filters_sort import (
@@ -18,12 +18,14 @@ from app.locations.utils.allowed_filters_sort import (
 class FacilityService(BaseService[Facility]):
     """The service class for 'facility'."""
 
-    def __init__(self, *, facility_repository: FacilityRepository, sub_district_service: BaseService) -> None:
+    def __init__(
+        self, *, facility_repository: FacilityRepository, sub_district_service: BaseService[SubDistrict]
+    ) -> None:
         """Initializer for 'facility' service.
 
         Args:
             facility_repository (FacilityRepository): The facility repository.
-            sub_district_service (BaseService): The sub_district service.
+            sub_district_service (BaseService[SubDistrict]): The sub_district service.
         """
         self.facility_repository = facility_repository
         self.sub_district_service = sub_district_service
