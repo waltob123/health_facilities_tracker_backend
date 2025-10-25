@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Type, TypeVar
+from typing import Optional, Type, TypeVar
 
 T = TypeVar("T")
 
@@ -7,6 +7,8 @@ T = TypeVar("T")
 class ErrorMessages(Enum):
     """Constants for error messages."""
 
+    EXPIRED_TOKEN = "The token provided is expired."
+    INVALID_TOKEN = "The token provided is not valid."
     INVALID_PHONE_NUMBER = (
         "The phone number is not valid. Phone numbers format: (country_code)number.\nE.g (233)111111111"
     )
@@ -109,16 +111,21 @@ class SuccessMessages(Enum):
     """Constants for success messages."""
 
     @classmethod
-    def created_successfully(cls, *, object_type: Type[T]) -> str:
+    def created_successfully(cls, *, object_type: Type[T], extra_info: Optional[str] = None) -> str:
         """Function to create created successfully message.
 
         Args:
             object_type (Type[T]): The type of object.
+            extra_info (str): The extra information to append ot the message.
 
         Returns:
             str: The message
         """
-        return f"{object_type.__name__} created successfully."
+        return (
+            f"{object_type.__name__} created successfully."
+            if not extra_info
+            else f"{object_type.__name__} created successfully."
+        )
 
     @classmethod
     def updated_successfully(cls, *, object_type: Type[T]) -> str:

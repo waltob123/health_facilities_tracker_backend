@@ -14,12 +14,14 @@ user_first_name_filter = AllowedFilterSchema(field="first_name", operators=["eq"
 user_phone_number_filter = AllowedFilterSchema(field="phone_number", operators=["eq"])
 user_facility_name_filter = AllowedFilterSchema(field="facility_name", operators=["eq", "like"])
 user_country_filter = AllowedFilterSchema(field="country", operators=["eq", "like"])
+user_role_filter = AllowedFilterSchema(field="role", operators=["eq", "like"])
 allowed_user_filters = [
     user_email_filter,
     user_first_name_filter,
     user_phone_number_filter,
     user_facility_name_filter,
     user_country_filter,
+    user_role_filter,
     created_at_filter,
     is_deleted_filter,
 ]

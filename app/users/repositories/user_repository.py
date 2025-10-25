@@ -32,13 +32,11 @@ class UserRepository(BaseReadRepository[User], BaseWriteRepository[User]):
         Returns:
             User: The created user.
         """
-        new_user = User(email=data.email, password_has=data.password_hash)  # type: ignore
+        roles = self.db_session.query(Role).filter(Role.id.in_(data.role_ids)).all()
 
-        if data.role_ids:
-            roles = self.db_session.query(Role).filter(Role.id.in_(data.role_ids)).all()
-            new_user.roles = roles
+        new_user_schema = {"email": data.email, "password_hash": data.password_hash, "roles": roles}
 
-        return self.save(object_to_save=new_user)
+        return self._default_create(data=new_user_schema)
 
     def get_all(
         self,
@@ -81,6 +79,10 @@ class UserRepository(BaseReadRepository[User], BaseWriteRepository[User]):
                 query = query.join(UserProfile.facility)
                 filters["facility_name"].update({"field_name": "name", "model": Facility})
 
+            if filters.get("role"):
+                query = query.join(Role)
+                filters["role"].update({"field_name": "name", "model": Role})
+
         return self._default_get_all(
             filters_without_joins=filters_without_joins,
             filters_with_joins=filters_with_joins,
@@ -89,3 +91,7 @@ class UserRepository(BaseReadRepository[User], BaseWriteRepository[User]):
             sort=sort,
             query=query,
         )
+
+    def update(self, *, entity: User, update_data: dict) -> User:
+        """Update a user."""
+        raise NotImplementedError

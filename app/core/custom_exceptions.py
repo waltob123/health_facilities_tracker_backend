@@ -44,3 +44,7 @@ class InvalidPasswordError(Exception):
 
 class InvalidEmailError(Exception):
     """Exception for when an email is invalid."""
+
+
+class InvalidPhoneNumberError(Exception):
+    """Exception for when a phone number is invalid."""

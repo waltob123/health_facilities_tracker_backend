@@ -74,4 +74,4 @@ class CreateUserProfileSchema(CreateUserProfileRequestSchema):
 
 UpdateUserProfileRequestSchema = CreateUserProfileRequestSchema
 
-UpdateUserProfileSchema = CreateUserProfileSchema
+UpdateUserProfileSchema = CreateUserProfileRequestSchema

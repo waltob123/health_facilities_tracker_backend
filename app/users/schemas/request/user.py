@@ -1,18 +1,18 @@
-from typing import Optional
+from pydantic import BaseModel, EmailStr, field_validator
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
-
-from app.core.custom_exceptions import InvalidEmailError, InvalidPasswordError
+from app.core.custom_exceptions import InvalidEmailError
 from app.core.utils.messages import ErrorMessages
 from app.core.utils.validators import is_valid_email, is_valid_password
 from app.users.schemas.request.user_profile import CreateUserProfileRequestSchema
 
 
-class BaseUserSchema(BaseModel):
-    """The base schema for user request and responses."""
+class CreateUserRequestSchema(BaseModel):
+    """The schema for create user request."""
 
     email: EmailStr
-    role_ids: Optional[list[str]] = Field(default=[])
+    password: str
+    role_ids: list[str]
+    user_profile: CreateUserProfileRequestSchema
 
     @field_validator("email")
     @classmethod
@@ -29,13 +29,6 @@ class BaseUserSchema(BaseModel):
             raise InvalidEmailError(ErrorMessages.INVALID_EMAIL.value)
         return value
 
-
-class CreateUserRequestSchema(BaseUserSchema):
-    """The schema for create user request."""
-
-    password: str
-    user_profile: CreateUserProfileRequestSchema
-
     @field_validator("password")
     @classmethod
     def validate_password(cls, value: str) -> str:
@@ -48,14 +41,13 @@ class CreateUserRequestSchema(BaseUserSchema):
             str: The validate password.
         """
         if not is_valid_password(password=value):
-            raise InvalidPasswordError(ErrorMessages.INVALID_PASSWORD.value)
+            raise ValueError(ErrorMessages.INVALID_PASSWORD.value)
         return value
 
 
-class CreateUserSchema(CreateUserRequestSchema):
+class CreateUserSchema(BaseModel):
     """The schema for creating a user."""
 
-    password_hash: Optional[str] = None
-
-
-UpdateUserSchema = CreateUserRequestSchema
+    email: str
+    password_hash: str
+    role_ids: list[str]

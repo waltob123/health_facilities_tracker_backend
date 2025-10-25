@@ -20,7 +20,7 @@ class User(Base, IdentityMixin, AuditCreateMixin, AuditUpdateMixin, SoftDeleteMi
     is_verified = Column(Boolean, default=False)
     is_suspended = Column(Boolean, default=False)
 
-    profile = relationship("UserProfile", back_populates="user")
+    profile = relationship("UserProfile", back_populates="user", uselist=False)
     roles = relationship("Role", secondary="user_roles", back_populates="users")
 
     def to_dict(self) -> dict:
@@ -28,11 +28,11 @@ class User(Base, IdentityMixin, AuditCreateMixin, AuditUpdateMixin, SoftDeleteMi
         return {
             "id": self.id,
             "email": self.email,
-            "first_name": self.profile.first_name,
-            "last_name": self.profile.last_name,
-            "phone_number": self.profile.phone_number,
-            "country": self.profile.country,
-            # "facility_name": self.profile.facility.name if self.profile.facility.name else None,
+            "first_name": self.profile.first_name if self.profile.first_name else None,
+            "last_name": self.profile.last_name if self.profile.last_name else None,
+            "phone_number": self.profile.phone_number if self.profile.phone_number else None,
+            "country": self.profile.country if self.profile.country else None,
+            "facility_name": self.profile.facility.name if self.profile.facility.name else None,
             "first_time_login": self.first_time_login,
             "token_version": self.token_version,
             "is_logout": self.is_logout,

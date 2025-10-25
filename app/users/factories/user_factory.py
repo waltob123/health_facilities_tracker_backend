@@ -1,0 +1,46 @@
+from sqlalchemy.orm import Session
+
+from app.core.factories.base_repository_factory import BaseRepositoryFactory
+from app.locations.dependencies.facility_service_dependency import create_facility_service
+from app.users.dependencies.user_profile_service_dependency import create_user_profile_service
+from app.users.models import User
+from app.users.repositories.user_repository import UserRepository
+from app.users.services.user_service import UserService
+
+
+class UserRepositoryFactory(BaseRepositoryFactory[User, UserRepository]):
+    """A factory for creating user repositories."""
+
+    @classmethod
+    def create(cls, *, db_session: Session) -> UserRepository:
+        """Create a new user repository.
+
+        Args:
+            db_session (Session): The database session for the repository.
+
+        Returns:
+            UserRepository: The created user repository.
+        """
+        return cls._default_create(db_session=db_session, model=User, repository_class=UserRepository)
+
+
+class UserServiceFactory:
+    """A factory for creating user services."""
+
+    @classmethod
+    def create(cls, *, user_repository: UserRepository) -> UserService:
+        """Create a new user service.
+
+        Args:
+            user_repository (UserRepository): The user repository for data.
+
+        Returns:
+            UserService: The created user service.
+        """
+        facility_service = create_facility_service(db_session=user_repository.db_session)
+        user_profile_service = create_user_profile_service(db_session=user_repository.db_session)
+        return UserService(
+            user_repository=user_repository,
+            user_profile_service=user_profile_service,
+            facility_service=facility_service,
+        )

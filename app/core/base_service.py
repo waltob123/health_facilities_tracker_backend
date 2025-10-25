@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, Optional, TypeVar, Union
+from typing import Any, Generic, Optional, TypeVar, Union
 
 from fastapi import HTTPException, Request, status
 from pydantic import BaseModel
@@ -52,6 +52,19 @@ class BaseService(ABC, Generic[T]):
             )
 
         return self.main_repository.get_by_id(entity_id=entity_id)  # type: ignore
+
+    def get_by_field(self, *, field_name: str, value: Any, operator: str = "eq") -> Union[T, list[T], None]:
+        """Get entities by a specific field.
+
+        Args:
+            field_name (str): The name of the field.
+            value (Any): The value to filter by.
+            operator (str): The operator to filter by.
+
+        Returns:
+            list[T]: A list of entity instances matching the criteria.
+        """
+        return self.main_repository.get_by_field(field_name=field_name, value=value, operator=operator)  # type: ignore
 
     def delete(self, *, entity_id: str) -> T:
         """Delete an entity.
