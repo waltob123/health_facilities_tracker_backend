@@ -124,6 +124,7 @@ class ErrorMessages(Enum):
 class SuccessMessages(Enum):
     """Constants for success messages."""
 
+    VERIFICATION_EMAIL_SENT = "Account verification email sent successfully."
     VERIFIED = "The account has been verified successfully."
 
     @classmethod

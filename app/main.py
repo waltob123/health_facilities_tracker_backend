@@ -10,8 +10,12 @@ from app.auth.routes.api.v1.auth_routes import auth_router
 from app.auth.routes.api.v1.permission_routes import permission_router
 from app.auth.routes.api.v1.role_routes import role_router
 from app.core.config.mail_config import mail_config
+from app.core.custom_exceptions import InvalidEmailError, InvalidPasswordError, InvalidPhoneNumberError
 from app.core.handlers.exceptions import (
     authentication_http_exception_handler,
+    authentication_invalid_email_handler,
+    authentication_invalid_password_handler,
+    authentication_invalid_phone_number_handler,
     http_exception_handler,
     validation_exception_handler,
     value_error_exception_handler,
@@ -66,6 +70,13 @@ fast_mail = FastMail(config=config)
 
 ##################################################################################
 #                                                                                #
+#                     ADD YOUR MIDDLEWARES HERE                           #
+#                                                                                #
+##################################################################################
+
+
+##################################################################################
+#                                                                                #
 #                     ADD YOUR EXCEPTION HANDLERS HERE                           #
 #                                                                                #
 ##################################################################################
@@ -73,6 +84,10 @@ app_v1.add_exception_handler(HTTPException, http_exception_handler)  # type: ign
 app_v1.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore
 app_v1.add_exception_handler(ValueError, value_error_exception_handler)  # type: ignore
 app_v1.add_exception_handler(AuthHTTPException, authentication_http_exception_handler)  # type: ignore
+app_v1.add_exception_handler(InvalidEmailError, authentication_invalid_email_handler)  # type: ignore
+app_v1.add_exception_handler(InvalidPasswordError, authentication_invalid_password_handler)  # type: ignore
+app_v1.add_exception_handler(InvalidPhoneNumberError, authentication_invalid_phone_number_handler)  # type: ignore
+
 ##################################################################################
 #                                                                                #
 #                            ADD YOUR ROUTERS HERE                               #

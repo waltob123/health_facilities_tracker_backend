@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import APIRouter, Body, Depends, Request, status
 
 from app.auth.dependencies.auth_service_dependency import create_auth_service
-from app.auth.docs.auth_docs import register_user_docs, verify_account_docs
-from app.auth.schemas.request.auth import AccountVerificationTokenSchema
+from app.auth.docs.auth_docs import register_user_docs, resend_account_verification_link_docs, verify_account_docs
+from app.auth.schemas.request.auth import AccountVerificationTokenSchema, EmailSchema
 from app.auth.services.auth_service import AuthService
 from app.core.schemas.base_entity_response_schema import ResponseSchema
 from app.core.utils.constants import HTTPResponseStatus
@@ -71,6 +71,44 @@ def verify_account(
         status_code=status.HTTP_201_CREATED,
         message=verified_user_response.message,  # type: ignore
         data=verified_user_response.model_dump(),  # type: ignore
+        request=request,
+    )
+
+    return response_data
+
+
+@auth_router.post(
+    path="/resend-account-verification-link",
+    status_code=status.HTTP_200_OK,
+    description=resend_account_verification_link_docs,
+)
+async def resend_account_verification_link(
+    request: Request,
+    auth_service: Annotated[AuthService, Depends(create_auth_service)],
+    resend_account_verification_request_data: Annotated[
+        EmailSchema, Body(..., description="Schema for resend account verification.")
+    ],
+) -> ResponseSchema:
+    """Method for handling resending account verification link request.
+
+    Args:
+        request (Request): The request object.
+        auth_service (AuthService): The auth service to use.
+        resend_account_verification_request_data (AccountVerificationTokenSchema): \
+        The data for needed to resend the account verification link..
+
+    Returns:
+        ResponseSchema: The response data.
+    """
+    verified_user_response = await auth_service.resend_account_verification_email(
+        resend_account_verification_email_data=resend_account_verification_request_data
+    )
+
+    response_data = ResponseSchema(
+        status=HTTPResponseStatus.SUCCESS.value,
+        status_code=status.HTTP_201_CREATED,
+        message=verified_user_response,  # type: ignore
+        data={},  # type: ignore
         request=request,
     )
 

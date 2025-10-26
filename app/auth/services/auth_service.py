@@ -12,6 +12,7 @@ from app.auth.schemas.request.auth import (
     AccountVerificationResponseSchema,
     AccountVerificationTokenSchema,
     AlreadyVerifiedErrorDataSchema,
+    EmailSchema,
 )
 from app.auth.services.token_service import TokenService
 from app.auth.utils.hash_password import PasswordHashManager
@@ -107,7 +108,7 @@ class AuthService(BaseService[User]):
         # create verification link
         verification_link = f"{project_config.FRONTEND_URL}/auth/verify-account?token={verification_token}"
 
-        # send the email
+        # create account verification template body schema
         body = AccountVerificationTemplateBodySchema(
             app_name=ApplicationConstants.APP_NAME.value,
             first_name=str(user_profile.first_name),
@@ -117,6 +118,7 @@ class AuthService(BaseService[User]):
             verification_url=verification_link,
         ).model_dump()
 
+        # build mail service
         (
             self.mail_service.subject(subject="Account Creation")
             .recipients(recipients=[user.email])  # type: ignore
@@ -124,6 +126,7 @@ class AuthService(BaseService[User]):
             .body(body=body)
         )
 
+        # send the mail
         try:
             await self.mail_service.send_mail()
         except ConnectionErrors:
@@ -178,11 +181,13 @@ class AuthService(BaseService[User]):
         # set is verified to true on user
         user_to_verify.is_verified = True  # type: ignore
 
+        # verify and save user.
         try:
             verified_user = self.user_repository.save(object_to_save=user_to_verify)
         except FailedToSaveObjectException as e:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
+        # create response after verifying user
         response = AccountVerificationResponseSchema(
             email=verified_user.email,  # type: ignore
             message=SuccessMessages.VERIFIED.value,
@@ -190,6 +195,74 @@ class AuthService(BaseService[User]):
         )
 
         return response
+
+    async def resend_account_verification_email(self, resend_account_verification_email_data: EmailSchema) -> str:
+        """Resend the account verification email
+
+        Args:
+            resend_account_verification_email_data (EmailStr): The resend account verification email data
+
+        Returns:
+            str: The response message
+        """
+        # check if the user exists
+        if not self.user_service.check_if_exists_and_not_deleted(
+            field_name="email", value=str(resend_account_verification_email_data.email).strip().lower(), operator="eq"
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=ErrorMessages.entity_does_not_exists(
+                    entity_type=User, value=str(resend_account_verification_email_data.email).strip().lower()
+                ),
+            )
+
+        # get the user
+        user = self.user_service.get_by_field(
+            field_name="email", value=str(resend_account_verification_email_data.email).strip().lower(), operator="eq"
+        )
+
+        # raise error if user is already verified
+        if user.is_verified:  # type: ignore
+            raise AuthHTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                data=AlreadyVerifiedErrorDataSchema(email=user.email, is_verified=user.is_verified).model_dump(),  # type: ignore
+                message=ErrorMessages.ALREADY_VERIFIED.value,
+            )
+
+        # create verification token
+        verification_token = self.token_service.create_token(
+            payload={"sub": user.id, "iss": ApplicationConstants.APP_NAME.value},  # type: ignore
+            expires_in_minutes=auth_config.VERIFICATION_LINK_EXPIRES_IN_MINUTES,
+        )
+
+        # create verification link
+        verification_link = f"{project_config.FRONTEND_URL}/auth/verify-account?token={verification_token}"
+
+        # create verification mail template body
+        body = AccountVerificationTemplateBodySchema(
+            app_name=ApplicationConstants.APP_NAME.value,
+            first_name=user.to_dict().get("first_name"),  # type: ignore
+            title="User Account Verification",
+            code_expires_in_hours=24,
+            current_year=datetime.now(tz=timezone.utc).year,
+            verification_url=verification_link,
+        ).model_dump()
+
+        # build mail service
+        (
+            self.mail_service.subject(subject="User Account Verification")
+            .template(template_name="account_creation.html")
+            .body(body=body)
+            .recipients(recipients=[user.email])  # type: ignore
+        )
+
+        # send verification mail
+        try:
+            await self.mail_service.send_mail()
+        except ConnectionErrors:
+            await self.mail_service.send_mail()
+
+        return SuccessMessages.VERIFICATION_EMAIL_SENT.value
 
     # def change_user_role(self, *, user_id: str, role_data: UpdateUserRoleSchema) -> User:
     #     """Change a user's role."""

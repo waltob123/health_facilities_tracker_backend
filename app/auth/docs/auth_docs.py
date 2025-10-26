@@ -50,3 +50,25 @@ The following permissions have the authority to verify an account:
 ### Response Body
 - General response schema
 """
+
+resend_account_verification_link_docs = """
+### This endpoint is used for resending an account verification link.
+
+The following permissions have the authority to resend the account verification link.:
+
+- `all`
+
+### Path Parameters:
+- None
+
+### Query Parameters:
+- None
+
+### Request Body:
+{\n
+    email: string\n
+}
+
+### Response Body
+- General response schema
+"""

@@ -66,7 +66,7 @@ class BaseService(ABC, Generic[T]):
 
         return self.main_repository.get_by_id(entity_id=entity_id)  # type: ignore
 
-    def get_by_field(self, *, field_name: str, value: Any, operator: str = "eq") -> Union[T, list[T], None]:
+    def get_by_field(self, *, field_name: str, value: Any, operator: str = "eq") -> Union[T, list[T]]:
         """Get entities by a specific field.
 
         Args:
@@ -75,12 +75,17 @@ class BaseService(ABC, Generic[T]):
             operator (str): The operator to filter by.
 
         Returns:
-            list[T]: A list of entity instances matching the criteria.
+            Union[T, list[T]]: A list of entity instances matching the criteria.
         """
-        try:
-            return self.main_repository.get_by_field(field_name=field_name, value=value, operator=operator)  # type: ignore
-        except EntityDoesNotExistsError as e:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
+        entity = self.main_repository.get_by_field(field_name=field_name, value=value, operator=operator)  # type: ignore
+
+        if entity is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=ErrorMessages.entity_does_not_exists(entity_type=self.main_repository.model, value=value),
+            )
+
+        return entity
 
     def delete(self, *, entity_id: str) -> T:
         """Delete an entity.

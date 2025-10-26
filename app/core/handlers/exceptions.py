@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from app.auth.custom_exceptions import AuthHTTPException
+from app.core.custom_exceptions import InvalidEmailError, InvalidPasswordError, InvalidPhoneNumberError
 from app.core.schemas.base_entity_response_schema import ResponseSchema
 from app.core.utils.constants import HTTPResponseStatus
 
@@ -87,7 +88,7 @@ async def value_error_exception_handler(request: Request, exception: ValueError)
 
 
 async def authentication_http_exception_handler(request: Request, exception: AuthHTTPException) -> JSONResponse:
-    """Custom exception handler for ValueError.
+    """Custom exception handler for AuthHTTPException.
 
     Args:
         request (Request): The request object.
@@ -108,4 +109,60 @@ async def authentication_http_exception_handler(request: Request, exception: Aut
         status_code=status_code,  # type: ignore
         message=message,  # type: ignore
         data=data,
+    ).to_json_response()
+
+
+async def authentication_invalid_email_handler(request: Request, exception: InvalidEmailError) -> JSONResponse:
+    """Custom exception handler for InvalidEmailError.
+
+    Args:
+        request (Request): The request object.
+        exception (InvalidEmailError): The InvalidEmailError object.
+
+    Returns:
+        JSONResponse: The JSON response with the error message.
+    """
+    return ResponseSchema(
+        request=request,
+        status=HTTPResponseStatus.ERROR.value,
+        status_code=status.HTTP_400_BAD_REQUEST,  # type: ignore
+        message=str(exception),  # type: ignore
+    ).to_json_response()
+
+
+async def authentication_invalid_password_handler(request: Request, exception: InvalidPasswordError) -> JSONResponse:
+    """Custom exception handler for InvalidPasswordError.
+
+    Args:
+        request (Request): The request object.
+        exception (InvalidPasswordError): The InvalidPasswordError object.
+
+    Returns:
+        JSONResponse: The JSON response with the error message.
+    """
+    return ResponseSchema(
+        request=request,
+        status=HTTPResponseStatus.ERROR.value,
+        status_code=status.HTTP_400_BAD_REQUEST,  # type: ignore
+        message=str(exception),  # type: ignore
+    ).to_json_response()
+
+
+async def authentication_invalid_phone_number_handler(
+    request: Request, exception: InvalidPhoneNumberError
+) -> JSONResponse:
+    """Custom exception handler for InvalidPhoneNumberError.
+
+    Args:
+        request (Request): The request object.
+        exception (InvalidPhoneNumberError): The InvalidPhoneNumberError object.
+
+    Returns:
+        JSONResponse: The JSON response with the error message.
+    """
+    return ResponseSchema(
+        request=request,
+        status=HTTPResponseStatus.ERROR.value,
+        status_code=status.HTTP_400_BAD_REQUEST,  # type: ignore
+        message=str(exception),  # type: ignore
     ).to_json_response()
