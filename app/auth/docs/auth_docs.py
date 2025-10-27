@@ -140,3 +140,27 @@ The following permissions have the authority to reset password.:
 ### Response Body
 - General response schema
 """
+
+
+authenticate_user_docs = """
+### This endpoint is used for authenticating a user.
+
+The following permissions have the authority to authenticate a user.:
+
+- `all`
+
+### Path Parameters:
+- None
+
+### Query Parameters:
+- None
+
+### Request Body:
+{\n
+    username: string,\n
+    password: string\n
+}
+
+### Response Body
+- General response schema
+"""

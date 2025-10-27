@@ -7,6 +7,7 @@ T = TypeVar("T")
 class ErrorMessages(Enum):
     """Constants for error messages."""
 
+    INVALID_CREDENTIALS = "The credentials provided are not valid."
     NOT_VERIFIED = "This account is not verified."
     ALREADY_VERIFIED = "This account has already been verified."
     EXPIRED_TOKEN = "The token provided is expired."
@@ -151,6 +152,7 @@ class ErrorMessages(Enum):
 class SuccessMessages(Enum):
     """Constants for success messages."""
 
+    AUTHENTICATED = "Authenticated successfully."
     PASSWORD_RESET_TOKEN_VERIFIED = "Password reset token verified successfully."
     PASSWORD_RESET = "Password reset successful."
     RESET_PASSWORD_EMAIL_SENT = "Reset password verification email sent successfully."

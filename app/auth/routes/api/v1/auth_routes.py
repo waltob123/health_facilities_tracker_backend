@@ -1,9 +1,11 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Request, status
+from fastapi.security import OAuth2PasswordRequestForm
 
 from app.auth.dependencies.auth_service_dependency import create_auth_service
 from app.auth.docs.auth_docs import (
+    authenticate_user_docs,
     register_user_docs,
     request_password_reset_docs,
     resend_account_verification_link_docs,
@@ -75,7 +77,7 @@ def verify_account(
 
     response_data = ResponseSchema(
         status=HTTPResponseStatus.SUCCESS.value,
-        status_code=status.HTTP_201_CREATED,
+        status_code=status.HTTP_200_OK,
         message=verified_user_response.message,  # type: ignore
         data=verified_user_response.model_dump(),  # type: ignore
         request=request,
@@ -112,7 +114,7 @@ async def resend_account_verification_link(
 
     response_data = ResponseSchema(
         status=HTTPResponseStatus.SUCCESS.value,
-        status_code=status.HTTP_201_CREATED,
+        status_code=status.HTTP_200_OK,
         message=verified_user_response,  # type: ignore
         data={},  # type: ignore
         request=request,
@@ -145,7 +147,7 @@ async def request_password_reset(
 
     response_data = ResponseSchema(
         status=HTTPResponseStatus.SUCCESS.value,
-        status_code=status.HTTP_201_CREATED,
+        status_code=status.HTTP_200_OK,
         message=request_password_reset_response,  # type: ignore
         data={},  # type: ignore
         request=request,
@@ -178,7 +180,7 @@ def verify_password_reset_token(
 
     response_data = ResponseSchema(
         status=HTTPResponseStatus.SUCCESS.value,
-        status_code=status.HTTP_201_CREATED,
+        status_code=status.HTTP_200_OK,
         message=SuccessMessages.PASSWORD_RESET_TOKEN_VERIFIED.value,  # type: ignore
         data=verify_password_reset_token_response,  # type: ignore
         request=request,
@@ -211,9 +213,42 @@ def reset_password(
 
     response_data = ResponseSchema(
         status=HTTPResponseStatus.SUCCESS.value,
-        status_code=status.HTTP_201_CREATED,
+        status_code=status.HTTP_200_OK,
         message=SuccessMessages.PASSWORD_RESET.value,  # type: ignore
         data=reset_password_response,  # type: ignore
+        request=request,
+    )
+
+    return response_data
+
+
+@auth_router.post(
+    path="/authenticate",
+    status_code=status.HTTP_200_OK,
+    description=authenticate_user_docs,
+)
+def authenticate_user(
+    request: Request,
+    auth_service: Annotated[AuthService, Depends(create_auth_service)],
+    user_credentials: Annotated[OAuth2PasswordRequestForm, Depends(OAuth2PasswordRequestForm)],
+) -> ResponseSchema:
+    """Method for handling reset password request.
+
+    Args:
+        request (Request): The request object.
+        auth_service (AuthService): The auth service to use.
+        user_credentials (OAuth2PasswordRequestForm): The user credentials needed for authentication
+
+    Returns:
+        ResponseSchema: The response data.
+    """
+    authentication_response = auth_service.authenticate_user(user_credentials=user_credentials)
+
+    response_data = ResponseSchema(
+        status=HTTPResponseStatus.SUCCESS.value,
+        status_code=status.HTTP_200_OK,
+        message=SuccessMessages.AUTHENTICATED.value,  # type: ignore
+        data=authentication_response,  # type: ignore
         request=request,
     )
 

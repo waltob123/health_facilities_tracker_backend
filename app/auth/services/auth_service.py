@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import HTTPException, Request, status
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_mail.errors import ConnectionErrors
 
 from app.auth.config.auth_config import auth_config
@@ -11,6 +12,7 @@ from app.auth.schemas.mail_body import AccountVerificationTemplateBodySchema, Re
 from app.auth.schemas.request.auth import (
     AccountVerificationResponseSchema,
     AlreadyVerifiedErrorDataSchema,
+    AuthenticationTokenSchema,
     EmailSchema,
     PasswordResetSchema,
     TokenDataSchema,
@@ -203,7 +205,7 @@ class AuthService(BaseService[User]):
 
         return response
 
-    async def resend_account_verification_email(self, resend_account_verification_email_data: EmailSchema) -> str:
+    async def resend_account_verification_email(self, *, resend_account_verification_email_data: EmailSchema) -> str:
         """Resend the account verification email
 
         Args:
@@ -272,7 +274,7 @@ class AuthService(BaseService[User]):
 
         return SuccessMessages.VERIFICATION_EMAIL_SENT.value
 
-    async def request_password_reset(self, email_data: EmailSchema) -> str:
+    async def request_password_reset(self, *, email_data: EmailSchema) -> str:
         """Request for password reset
 
         Args:
@@ -338,7 +340,7 @@ class AuthService(BaseService[User]):
 
         return SuccessMessages.RESET_PASSWORD_EMAIL_SENT.value
 
-    def verify_password_reset_token(self, token_data: TokenDataSchema) -> dict:
+    def verify_password_reset_token(self, *, token_data: TokenDataSchema) -> dict:
         """Verify the password reset token
 
         Args:
@@ -367,7 +369,7 @@ class AuthService(BaseService[User]):
 
         return {"email": user.email, "id": user.id}  # type: ignore
 
-    def reset_password(self, password_reset_data: PasswordResetSchema) -> str:
+    def reset_password(self, *, password_reset_data: PasswordResetSchema) -> str:
         """Reset the user's password
 
         Args:
@@ -399,6 +401,63 @@ class AuthService(BaseService[User]):
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
 
         return SuccessMessages.PASSWORD_RESET.value
+
+    def authenticate_user(self, *, user_credentials: OAuth2PasswordRequestForm) -> AuthenticationTokenSchema:
+        """Authenticate a user.
+
+        Args:
+            user_credentials (OAuth2PasswordRequestForm): The user credentials needed to perform authentication
+
+        Returns:
+            AuthenticationTokenSchema: The tokens after authenticating user.
+        """
+        # check if the user exists
+        if not self.user_service.check_if_exists_and_not_deleted(
+            field_name="email", value=str(user_credentials.username).strip().lower(), operator="eq"
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=ErrorMessages.entity_does_not_exists(
+                    entity_type=User, value=str(user_credentials.username).strip().lower()
+                ),
+            )
+
+        # get the user
+        user = self.user_service.get_by_field(
+            field_name="email", value=str(user_credentials.username).strip().lower(), operator="eq"
+        )
+
+        if not user.is_verified:  # type: ignore
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorMessages.NOT_VERIFIED.value)
+
+        if not self.password_hash_manager.verify_password(
+            plain_password=user_credentials.password,
+            hashed_password=user.password_hash,  # type: ignore
+        ):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorMessages.INVALID_CREDENTIALS.value)
+
+        payload = {"sub": user.id, "iss": ApplicationConstants.APP_NAME.value, "token_version": user.token_version}  # type: ignore
+
+        access_token = self.token_service.create_token(
+            payload=payload,
+            expires_in_minutes=auth_config.ACCESS_TOKEN_EXPIRES_IN_MINUTES,
+            token_type=TokenTypeConstants.ACCESS_TOKEN.value,
+        )
+        refresh_token = self.token_service.create_token(
+            payload=payload,
+            expires_in_minutes=auth_config.REFRESH_TOKEN_EXPIRES_IN_MINUTES,
+            token_type=TokenTypeConstants.REFRESH_TOKEN.value,
+        )
+
+        user.is_logged = True  # type: ignore
+        user.last_login = datetime.now(tz=timezone.utc)  # type: ignore
+
+        try:
+            self.user_repository.save(object_to_save=user)  # type: ignore
+        except FailedToSaveObjectException as e:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
+
+        return AuthenticationTokenSchema(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
 
     # def change_user_role(self, *, user_id: str, role_data: UpdateUserRoleSchema) -> User:
     #     """Change a user's role."""
