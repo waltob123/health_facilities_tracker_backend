@@ -11,6 +11,7 @@ class AuthConfig(BaseSettings):
     ACCESS_TOKEN_EXPIRES_IN_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRES_IN_MINUTES: int
     VERIFICATION_LINK_EXPIRES_IN_MINUTES: int
+    RESET_PASSWORD_TOKEN_EXPIRES_IN_MINUTES: int
 
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", env_file_encoding="utf-8", extra="ignore")
 

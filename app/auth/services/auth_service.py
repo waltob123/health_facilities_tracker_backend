@@ -7,7 +7,7 @@ from fastapi_mail.errors import ConnectionErrors
 from app.auth.config.auth_config import auth_config
 from app.auth.custom_exceptions import AuthHTTPException
 from app.auth.models import Role
-from app.auth.schemas.mail_body import AccountVerificationTemplateBodySchema
+from app.auth.schemas.mail_body import AccountVerificationTemplateBodySchema, ResetPasswordTemplateBodySchema
 from app.auth.schemas.request.auth import (
     AccountVerificationResponseSchema,
     AccountVerificationTokenSchema,
@@ -263,6 +263,69 @@ class AuthService(BaseService[User]):
             await self.mail_service.send_mail()
 
         return SuccessMessages.VERIFICATION_EMAIL_SENT.value
+
+    async def request_password_reset(self, email_data: EmailSchema) -> str:
+        """Request for password reset
+
+        Args:
+            email_data (EmailSchema): The user email data
+
+        Returns:
+            str: The password reset request response
+        """
+        # check if the user exists
+        if not self.user_service.check_if_exists_and_not_deleted(
+            field_name="email", value=str(email_data.email).strip().lower(), operator="eq"
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=ErrorMessages.entity_does_not_exists(
+                    entity_type=User, value=str(email_data.email).strip().lower()
+                ),
+            )
+
+        # get the user
+        user = self.user_service.get_by_field(
+            field_name="email", value=str(email_data.email).strip().lower(), operator="eq"
+        )
+
+        # Check if the user is verified
+        if not user.is_verified:  # type: ignore
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorMessages.NOT_VERIFIED.value)
+
+        # Generate a reset verification token
+        reset_verification_token = self.token_service.create_token(
+            payload={"sub": user.id, "iss": ApplicationConstants.APP_NAME.value},  # type: ignore
+            expires_in_minutes=auth_config.RESET_PASSWORD_TOKEN_EXPIRES_IN_MINUTES,
+        )
+
+        # create verification link
+        verification_link = f"{project_config.FRONTEND_URL}/auth/reset-password?token={reset_verification_token}"
+
+        # Send the reset code to the user's email
+        mail_body = ResetPasswordTemplateBodySchema(
+            title="Password Reset Request",
+            first_name=user.to_dict().get("first_name"),  # type: ignore
+            code_expires_in_minutes=auth_config.RESET_PASSWORD_TOKEN_EXPIRES_IN_MINUTES,
+            app_name=ApplicationConstants.APP_NAME.value,
+            current_year=datetime.now(tz=timezone.utc).year,
+            verification_url=verification_link,
+        )
+
+        # Send the email
+        (
+            self.mail_service.subject(subject="Password Reset Request")
+            .template(template_name="reset_password.html")
+            .body(body=mail_body.model_dump())
+            .recipients(recipients=[user.email])  # type: ignore
+        )
+
+        try:
+            await self.mail_service.send_mail()
+        except ConnectionErrors:
+            await self.mail_service.send_mail()
+
+        return SuccessMessages.RESET_PASSWORD_EMAIL_SENT.value
 
     # def change_user_role(self, *, user_id: str, role_data: UpdateUserRoleSchema) -> User:
     #     """Change a user's role."""

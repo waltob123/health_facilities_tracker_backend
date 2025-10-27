@@ -3,7 +3,12 @@ from typing import Annotated
 from fastapi import APIRouter, Body, Depends, Request, status
 
 from app.auth.dependencies.auth_service_dependency import create_auth_service
-from app.auth.docs.auth_docs import register_user_docs, resend_account_verification_link_docs, verify_account_docs
+from app.auth.docs.auth_docs import (
+    register_user_docs,
+    request_password_reset_docs,
+    resend_account_verification_link_docs,
+    verify_account_docs,
+)
 from app.auth.schemas.request.auth import AccountVerificationTokenSchema, EmailSchema
 from app.auth.services.auth_service import AuthService
 from app.core.schemas.base_entity_response_schema import ResponseSchema
@@ -94,8 +99,8 @@ async def resend_account_verification_link(
     Args:
         request (Request): The request object.
         auth_service (AuthService): The auth service to use.
-        resend_account_verification_request_data (AccountVerificationTokenSchema): \
-        The data for needed to resend the account verification link..
+        resend_account_verification_request_data (EmailSchema): \
+        The data for needed to resend the account verification link.
 
     Returns:
         ResponseSchema: The response data.
@@ -108,6 +113,41 @@ async def resend_account_verification_link(
         status=HTTPResponseStatus.SUCCESS.value,
         status_code=status.HTTP_201_CREATED,
         message=verified_user_response,  # type: ignore
+        data={},  # type: ignore
+        request=request,
+    )
+
+    return response_data
+
+
+@auth_router.post(
+    path="/request-password-reset",
+    status_code=status.HTTP_200_OK,
+    description=request_password_reset_docs,
+)
+async def request_password_reset(
+    request: Request,
+    auth_service: Annotated[AuthService, Depends(create_auth_service)],
+    request_password_reset_data: Annotated[
+        EmailSchema, Body(..., description="Schema for resend account verification.")
+    ],
+) -> ResponseSchema:
+    """Method for handling resending account verification link request.
+
+    Args:
+        request (Request): The request object.
+        auth_service (AuthService): The auth service to use.
+        request_password_reset_data (EmailSchema): The data for needed to resend the account verification link.
+
+    Returns:
+        ResponseSchema: The response data.
+    """
+    request_password_reset_response = await auth_service.request_password_reset(email_data=request_password_reset_data)
+
+    response_data = ResponseSchema(
+        status=HTTPResponseStatus.SUCCESS.value,
+        status_code=status.HTTP_201_CREATED,
+        message=request_password_reset_response,  # type: ignore
         data={},  # type: ignore
         request=request,
     )

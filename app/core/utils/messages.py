@@ -7,6 +7,7 @@ T = TypeVar("T")
 class ErrorMessages(Enum):
     """Constants for error messages."""
 
+    NOT_VERIFIED = "This account is not verified."
     ALREADY_VERIFIED = "This account has already been verified."
     EXPIRED_TOKEN = "The token provided is expired."
     INVALID_TOKEN = "The token provided is not valid."
@@ -32,6 +33,32 @@ class ErrorMessages(Enum):
             str: The message
         """
         return f"{object_type.__name__} already exists."
+
+    @classmethod
+    def already_approved(cls, *, object_type: Type[T], value: str) -> str:
+        """Function to create already approved error messages.
+
+        Args:
+            object_type (Type[T]): The type of object.
+            value (str): The value that has already been approved.
+
+        Returns:
+            str: The message
+        """
+        return f"{object_type.__name__} {value} has already been approved."
+
+    @classmethod
+    def entity_not_approved(cls, *, object_type: Type[T], value: str) -> str:
+        """Function to create entity not approved error messages.
+
+        Args:
+            object_type (Type[T]): The type of object.
+            value (str): The value that has not been approved.
+
+        Returns:
+            str: The message
+        """
+        return f"{object_type.__name__} {value} has not been approved."
 
     @classmethod
     def entity_does_not_exists(cls, *, entity_type: Type[T], value: str) -> str:
@@ -124,6 +151,7 @@ class ErrorMessages(Enum):
 class SuccessMessages(Enum):
     """Constants for success messages."""
 
+    RESET_PASSWORD_EMAIL_SENT = "Reset password verification email sent successfully."
     VERIFICATION_EMAIL_SENT = "Account verification email sent successfully."
     VERIFIED = "The account has been verified successfully."
 
@@ -191,3 +219,16 @@ class SuccessMessages(Enum):
             str: The message
         """
         return f"{object_type.__name__} restored successfully."
+
+    @classmethod
+    def approved_successfully(cls, *, object_type: Type[T], value: str) -> str:
+        """Function to create approved successfully message.
+
+        Args:
+            object_type (Type[T]): The type of object.
+            value (str): The value approved successfully.
+
+        Returns:
+            str: The message
+        """
+        return f"{object_type.__name__} {value} approved successfully."
